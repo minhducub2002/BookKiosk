@@ -1,6 +1,3 @@
----
-
-```markdown
 # 📚 Book Kiosk Project
 
 ## 📖 Overview
@@ -86,4 +83,3 @@ For any queries or suggestions, feel free to contact us at:
 
 ## 📜 License
 This project is licensed under the MIT License. See the `LICENSE` file for details.
-```
