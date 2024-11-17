@@ -1,0 +1,26 @@
+Esp32 trung tâm: 
+[DEFAULT] ESP32 Board MAC Address: e8:68:e7:06:fc:34
+
+Esp32C3 khoang đẩy:
+- Ver2_1: [DEFAULT] ESP32 Board MAC Address: 7c:2c:67:c8:4e:78
+
+
+Keyboard: thứ tự từ trái qua phải
+Row 1	D13
+Row 2	D12
+Row 3	D14
+Row 4	D27
+Col 1	D26
+Col 2	D25
+Col 3	D33
+Col 4	D32
+
+RFID Reader: thứ tự từ trái qua phải
+SDA	D5	
+SCK	D18
+MOSI	D23
+MISO	D19
+RQ
+GND	GND
+RST	D0
+3.3V	3.3V

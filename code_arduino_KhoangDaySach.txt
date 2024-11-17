@@ -1,0 +1,73 @@
+#include <AFMotor.h>
+#include <SoftwareSerial.h>
+
+#define TX_PIN 13
+#define RX_PIN 2
+
+const int stopSwitchPin = 9;  // Công tắc tắt (Stop)
+// bool motorRunning = false;    // Biến trạng thái của động cơ
+
+// Khai báo SoftwareSerial, chọn chân 0 làm RX và chân 1 làm TX
+SoftwareSerial Serial1(13, 2);  // TX, RX
+
+// AF_DCMotor motor(2, MOTOR12_64KHZ);  // tạo động cơ #2, 64KHz pwm
+AF_DCMotor motor(2);   // tạo động cơ #3
+
+String receivedData = "";  // Biến lưu chuỗi nhận được
+
+void setup() {
+  Serial.begin(9600);   // Kết nối với Serial monitor
+  Serial1.begin(4800);  // Kết nối với ESP32
+
+  pinMode(stopSwitchPin, INPUT_PULLUP);  // Công tắc Stop với điện trở kéo lên
+  motor.setSpeed(255);              // chọn tốc độ (maximum 255/255)
+}
+
+void loop() {
+  if (Serial1.available()) {
+    char c = Serial1.read();  // Đọc từng ký tự từ Serial1
+    receivedData += c;        // Ghép từng ký tự vào chuỗi
+    if (c == '\n') {        // Khi gặp ký tự xuống dòng (\n), nghĩa là đã nhận đủ chuỗi
+      receivedData.trim();  // Loại bỏ ký tự khoảng trắng thừa
+      Serial.println("Chuỗi nhận được: " + receivedData);
+
+      // Tách chuỗi thành từng phần theo khoảng trắng
+      int index = 0;
+      String parts[5];  // Mảng lưu phần đã tách
+      while (receivedData.length() > 0) {
+        int spaceIndex = receivedData.indexOf(' ');  // Tìm vị trí khoảng trắng tiếp theo
+        if (spaceIndex == -1) {
+          parts[index] = receivedData;  // Nếu không còn khoảng trắng, phần cuối cùng là chuỗi còn lại
+          break;
+        }
+        parts[index] = receivedData.substring(0, spaceIndex);   // Tách chuỗi trước khoảng trắng
+        receivedData = receivedData.substring(spaceIndex + 1);  // Cắt phần đã tách ra khỏi chuỗi
+        index++;
+      }
+
+      // In ra các phần đã tách
+      // for (int i = 0; i <= index; i++) {
+      //   Serial.println("Phần " + String(i + 1) + ": " + parts[i]);
+      // }
+      Serial.println("ID: " + parts[0]);
+      Serial.println("Khoang: " + parts[1]);
+      Serial.println("Lệnh: " + parts[2]);
+
+      if (parts[2] == "RUN") {
+        Serial.println("run DC motor");
+        motor_right.run(FORWARD);  // động cơ tiến
+        motor_left.run(FORWARD);  // động cơ tiến
+      }
+      // if (parts[2] == "STOP") {
+      //   Serial.println("stop DC motor");
+      //   motor.run(RELEASE);  // động cơ dừng
+      // }
+      receivedData = "";  // Xóa chuỗi để chuẩn bị nhận chuỗi mới
+    }
+  }
+  Serial.println(digitalRead(stopSwitchPin));
+  if (digitalRead(stopSwitchPin) == LOW) {
+    motor_left.run(RELEASE);        // Khi nhấn công tắc Stop, tắt motor
+    motor_right.run(RELEASE);  // động cơ tiến
+  }
+}
