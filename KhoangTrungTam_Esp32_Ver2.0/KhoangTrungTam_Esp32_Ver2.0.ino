@@ -21,7 +21,6 @@
 #define DATABASE_URL "https://library-ea8e5-default-rtdb.asia-southeast1.firebasedatabase.app/"
 //Define Firebase Data object
 FirebaseData fbdo;
-
 FirebaseAuth auth;
 FirebaseConfig config;
 

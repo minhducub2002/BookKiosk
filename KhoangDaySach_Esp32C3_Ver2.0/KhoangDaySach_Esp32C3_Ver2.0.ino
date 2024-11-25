@@ -1,9 +1,15 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define IN1 6
-#define IN2 5
-#define ENA 7
+// #define IN1 6
+// #define IN2 5
+// #define ENA 7
+// #define ID 1
+
+#define IN1 8
+#define IN2 9
+#define ENA 6
+
 #define MAX_SPEED 255  //từ 0-255
 #define MIN_SPEED 0
 

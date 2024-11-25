@@ -3,6 +3,7 @@ Esp32 trung tâm:
 
 Esp32C3 khoang đẩy:
 - Ver2_1: [DEFAULT] ESP32 Board MAC Address: 7c:2c:67:c8:4e:78
+- Ver2_2: [DEFAULT] ESP32 Board MAC Address: 18:8b:0e:2a:90:70
 
 
 Keyboard: thứ tự từ trái qua phải
