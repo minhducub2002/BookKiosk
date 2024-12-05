@@ -20,7 +20,6 @@ MFRC522::MIFARE_Key key;
 // Init array that will store new NUID
 byte nuidPICC[4];
 
-
 // Define for Keyboard Matrix 4x4 ------------------------------------------------------------------------------------------------
 #define ROWS 4
 #define COLS 4
@@ -35,8 +34,10 @@ uint8_t colPins[COLS] = { 26, 25, 33, 32 };  // GIOP33, GIOP32, GIOP35, GIOP34
 Keypad keypad = Keypad(makeKeymap(keyMap), rowPins, colPins, ROWS, COLS);
 
 // Declare address receiver ------------------------------------------------------------------------------------------------------
-uint8_t khoang1[] = { 0x7c, 0x2c, 0x67, 0xc8, 0x4e, 0x78 };  //7c:2c:67:c8:4e:78
-uint8_t khoang2[] = { 0x18, 0x8b, 0x0e, 0x2a, 0x90, 0x70 };  //18:8b:0e:2a:90:70
+uint8_t storageCompartment1[] = { 0x7c, 0x2c, 0x67, 0xc8, 0x4e, 0x78 };  //7c:2c:67:c8:4e:78
+uint8_t storageCompartment2[] = { 0x18, 0x8b, 0x0e, 0x2a, 0x90, 0x70 };  //18:8b:0e:2a:90:70
+uint8_t deliveryCompartment[] = { 0x34, 0xcd, 0xb0, 0xd1, 0x53, 0x14 };  //34:cd:b0:d1:53:14
+
 
 typedef struct data_struct {
   String ID;
@@ -111,18 +112,28 @@ void setup() {
   // register peer
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
-  // register first peer
-  memcpy(peerInfo.peer_addr, khoang1, 6);
+
+  // register storage compartment 1
+  memcpy(peerInfo.peer_addr, storageCompartment1, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     Serial.println("Failed to add peer");
     return;
   }
-  // register second peer
-  memcpy(peerInfo.peer_addr, khoang2, 6);
+  
+  // register storage compartment 2
+  memcpy(peerInfo.peer_addr, storageCompartment2, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     Serial.println("Failed to add peer");
     return;
   }
+
+  // register delivery comartment
+  memcpy(peerInfo.peer_addr, deliveryCompartment, 6);
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add peer");
+    return;
+  }
+
   esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 
   delay(100);
@@ -142,8 +153,8 @@ void loop() {
 
       // Send to khoang day sach
       dataSend.ID = keyboardData;
-      dataSend.command = "RUN";
-      esp_err_t result = esp_now_send(0, (uint8_t*)&dataSend, sizeof(dataSend));
+      dataSend.command = "WAIT";
+      esp_err_t result = esp_now_send(deliveryCompartment, (uint8_t*)&dataSend, sizeof(dataSend));
       if (result == ESP_OK) {
         Serial.println("Sent with success");
       } else {

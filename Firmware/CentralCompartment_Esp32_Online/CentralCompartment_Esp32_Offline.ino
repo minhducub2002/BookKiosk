@@ -2,6 +2,11 @@
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
 
+// Define LED
+#define LED_RED 27
+#define LED_GREEN 26
+#define LED_BLUE 25
+
 // Define TX and RX pins for UART (change if needed)
 #define TXD1 17
 #define RXD1 21
@@ -33,9 +38,18 @@ float floatValue;
 bool signupOK = false;
 String ID = "";       // Biến lưu ID nhận được từ esp32_offline
 String command = "";  // Biến lưu command nhận được từ esp32_offline
+int toneVal = 4000;   // Còi
 
 void setup() {
   Serial.begin(115200);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
+  digitalWrite(LED_RED, HIGH);
+  digitalWrite(LED_GREEN, LOW);
+  digitalWrite(LED_BLUE, LOW);
+
+  pinMode(14, OUTPUT);
   mySerial.begin(9600, SERIAL_8N1, RXD1, TXD1);  // UART setup
 
   WiFi.mode(WIFI_STA);
@@ -74,6 +88,10 @@ void setup() {
 }
 
 void loop() {
+  digitalWrite(LED_GREEN, HIGH);
+  digitalWrite(LED_RED, LOW);
+  digitalWrite(LED_BLUE, LOW);
+
   // Check if data is available to read
   if (mySerial.available()) {
     // Read data and display it
@@ -93,6 +111,7 @@ void loop() {
 
     if (ID.equals("Keypad")) {
       if (Firebase.RTDB.setString(&fbdo, "/keyboard/key", command)) {
+        tone(14, toneVal, 1000);
         Serial.println("PASSED");
         Serial.println("PATH: " + fbdo.dataPath());
         Serial.println("TYPE: " + fbdo.dataType());
@@ -104,6 +123,7 @@ void loop() {
 
     if (ID.equals("RFID")) {
       if (Firebase.RTDB.setString(&fbdo, "borrowers/UID", command)) {
+        tone(14, toneVal, 1000);
         Serial.println("PASSED");
         Serial.println("PATH: " + fbdo.dataPath());
         Serial.println("TYPE: " + fbdo.dataType());

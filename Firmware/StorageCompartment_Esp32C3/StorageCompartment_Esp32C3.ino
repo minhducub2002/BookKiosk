@@ -1,17 +1,29 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define IN1 6
-#define IN2 5
-#define ENA 7
+// #define IN1 6
+// #define IN2 5
+// #define ENA 7
+// #define ID 1
+const String ID_COMPARTMENT = "6"; // thay bang ID khoang
+
+// Chân kết nối với DC motor shield
+#define IN1 8
+#define IN2 9
+#define ENA 6
+
+// Chân kết nối với tín hiệu OUT của KY-033
+#define IF_SENSOR_PIN 7
+
 #define MAX_SPEED 255  //từ 0-255
 #define MIN_SPEED 0
 
-const int stopSwitchPinFront = A3;  // Công tắc tắt đằng trước(Stop)
+const int stopSwitchPinFront = A1;  // Công tắc tắt đằng trước(Stop)
 const int stopSwitchPinBack = A2;   // Công tắc tắt đằng sau(Stop)
-const int stopSwitchPinStop = A1;   // Công tắc tắt dừng(Stop)
+const int stopSwitchPinStop = A3;   // Công tắc tắt dừng(Stop)
 
-uint8_t khoangTrungTam[] = { 0xe8, 0x68, 0xe7, 0x06, 0xfc, 0x34 };  //e8:68:e7:06:fc:34
+uint8_t centralCompartment[] = { 0xe8, 0x68, 0xe7, 0x06, 0xfc, 0x34 };       //e8:68:e7:06:fc:34
+uint8_t deliveryCompartment[] = { 0x34, 0xcd, 0xb0, 0xd1, 0x53, 0x14 };  //34:cd:b0:d1:53:14
 
 //Structure to receive data
 //Must match the sender structure
@@ -43,7 +55,8 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
   Serial.println(dataRev.command);
   Serial.println();
 
-  if (!dataRev.ID.equals("1")) {
+  if (!dataRev.ID.equals(ID_COMPARTMENT)) { 
+    Serial.println("Sai ID");
     return;
   }
 
@@ -51,6 +64,8 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
     Serial.println("run DC motor");
     motor_1_Tien(MAX_SPEED);  // động cơ tiến
   }
+  dataRev.ID = "";
+  dataRev.command = "";
 }
 
 // callback when data is sent
@@ -63,6 +78,9 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 void setup() {
   //Initialize Serial Monitor
   Serial.begin(115200);
+
+  // Cấu hình chân SENSOR_PIN là đầu vào
+  pinMode(IF_SENSOR_PIN, INPUT);
 
   //Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
@@ -81,10 +99,12 @@ void setup() {
   // get the status of Trasnmitted packet
   esp_now_register_send_cb(OnDataSent);
 
-  // Register peer
-  memcpy(peerInfo.peer_addr, khoangTrungTam, 6);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
+
+
+  // Register peer
+  memcpy(peerInfo.peer_addr, deliveryCompartment, 6);
 
   // Add peer
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
@@ -99,6 +119,8 @@ void setup() {
   pinMode(stopSwitchPinFront, INPUT_PULLUP);  // Công tắc Stop với điện trở kéo lên
   pinMode(stopSwitchPinBack, INPUT_PULLUP);   // Công tắc Stop với điện trở kéo lên
   pinMode(stopSwitchPinStop, INPUT_PULLUP);   // Công tắc Stop với điện trở kéo lên
+
+  Serial.println("ok");
 }
 
 void loop() {
@@ -107,33 +129,22 @@ void loop() {
   // Serial.println(digitalRead(stopSwitchPinFront));
   // Serial.print("cong tac sau: ");
   // Serial.println(digitalRead(stopSwitchPinBack));
-  Serial.print("cong tac dung: ");
-  Serial.println(digitalRead(stopSwitchPinStop));
+  // Serial.print("cong tac dung: ");
+  // Serial.println(digitalRead(stopSwitchPinStop));
   // Serial.println("***");
 
-  if (digitalRead(stopSwitchPinFront) == 0) {
-    motor_1_Dung();          // động cơ stop
-    motor_1_Lui(MAX_SPEED);  // động cơ lùi
-    Serial.println("Dong co lui lai");
-  }
-  if (digitalRead(stopSwitchPinBack) == 0) {
-    motor_1_Tien(MAX_SPEED);
-    checkStop = 1;
-    //motor_1_Dung();  // động cơ stop
-    Serial.println("Dong co dung lai");
-  }
-  if (digitalRead(stopSwitchPinBack) == 1 && checkStop == 1) {
-    motor_1_Dung();  // động cơ stop
-    checkStop = 0;
-  }
-  if (digitalRead(stopSwitchPinStop) == 0) {
-    motor_1_Dung();  // động cơ stop
-    Serial.println("Dong co stop");
-    dataSend.ID = "1";
-    dataSend.command = "OK";
-    // Send message via ESP-NOW
-    esp_err_t result = esp_now_send(khoangTrungTam, (uint8_t *)&dataSend, sizeof(dataSend));
+  //Đọc trạng thái từ cảm biến
+  int sensorValue = digitalRead(IF_SENSOR_PIN);
 
+  if (sensorValue == HIGH) {  // Không phăt hiện ra vật thể
+
+  } else {
+    motor_1_Dung();  // động cơ stop
+    Serial.println("Dong co stop 1");
+    dataSend.ID = "0";
+    dataSend.command = "DOWN";
+    // Send message via ESP-NOW
+    esp_err_t result = esp_now_send(deliveryCompartment, (uint8_t *)&dataSend, sizeof(dataSend));
     if (result == ESP_OK) {
       Serial.println("Sent with success");
     } else {
@@ -141,7 +152,38 @@ void loop() {
     }
     delay(200);
   }
-  delay(100);
+
+  if (digitalRead(stopSwitchPinFront) == 0) {
+    motor_1_Lui(MAX_SPEED);  // động cơ lùi
+    Serial.println("Dong co lui lai");
+  }
+  if (digitalRead(stopSwitchPinBack) == 0) {
+    motor_1_Tien(MAX_SPEED);
+    checkStop = 1;
+    //motor_1_Dung();  // động cơ stop
+    Serial.println("Dong co tien");
+  }
+  if (digitalRead(stopSwitchPinBack) == 1 && checkStop == 1) {
+    motor_1_Dung();  // động cơ stop
+    Serial.println("Dong co stop 2");
+    checkStop = 0;
+  }
+  // if (digitalRead(stopSwitchPinStop) == 0) {
+  //   motor_1_Dung();  // động cơ stop
+  //   Serial.println("Dong co stop 3");
+  //   dataSend.ID = "1";
+  //   dataSend.command = "OK";
+  //   // Send message via ESP-NOW
+  //   esp_err_t result = esp_now_send(deliveryCompartment, (uint8_t *)&dataSend, sizeof(dataSend));
+
+  //   if (result == ESP_OK) {
+  //     Serial.println("Sent with success");
+  //   } else {
+  //     Serial.println("Error sending the data");
+  //   }
+  //   delay(200);
+  // }
+  delay(200);
 }
 
 void motor_1_Dung() {
