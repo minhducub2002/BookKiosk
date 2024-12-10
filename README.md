@@ -47,6 +47,26 @@ The **Book Kiosk Project** aims to create an automated kiosk system for selling 
 
 ---
 
+## 🎮 How to Run the Website
+- Ensure you have **Node.js** and **npm** installed on your system.
+### Steps to Run
+1. Open **Visual Studio Code (VSC)** or a terminal of your choice.
+2. Navigate to the desired directory (`code_admin` or `code_user`) using the `cd` command.  
+   Example:  
+   ```bash
+   cd D:/code_user
+   ```
+3. Run the following commands:
+   - **Install dependencies**:  
+     ```bash
+     npm i
+     ```
+   - **Start the project**:  
+     ```bash
+     npm start
+     ```
+---
+
 ## 📂 Project Structure
 ```
 BookKiosk/
