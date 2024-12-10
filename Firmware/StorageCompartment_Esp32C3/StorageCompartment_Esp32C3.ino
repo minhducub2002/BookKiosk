@@ -5,7 +5,7 @@
 // #define IN2 5
 // #define ENA 7
 // #define ID 1
-const String ID_COMPARTMENT = "6"; // thay bang ID khoang
+const String ID_COMPARTMENT = "4"; // thay bang ID khoang
 
 // Chân kết nối với DC motor shield
 #define IN1 8
@@ -23,7 +23,7 @@ const int stopSwitchPinBack = A2;   // Công tắc tắt đằng sau(Stop)
 const int stopSwitchPinStop = A3;   // Công tắc tắt dừng(Stop)
 
 uint8_t centralCompartment[] = { 0xe8, 0x68, 0xe7, 0x06, 0xfc, 0x34 };       //e8:68:e7:06:fc:34
-uint8_t deliveryCompartment[] = { 0x34, 0xcd, 0xb0, 0xd1, 0x53, 0x14 };  //34:cd:b0:d1:53:14
+uint8_t deliveryCompartment[] = { 0x34, 0xcd, 0xb0, 0xd1, 0x53, 0x14 };      //34:cd:b0:d1:53:14
 
 //Structure to receive data
 //Must match the sender structure
@@ -141,7 +141,7 @@ void loop() {
   } else {
     motor_1_Dung();  // động cơ stop
     Serial.println("Dong co stop 1");
-    dataSend.ID = "0";
+    dataSend.ID = dataRev.ID;
     dataSend.command = "DOWN";
     // Send message via ESP-NOW
     esp_err_t result = esp_now_send(deliveryCompartment, (uint8_t *)&dataSend, sizeof(dataSend));

@@ -19,9 +19,11 @@ Stepper myStepper(stepsPerRevolution, 5, 6, 7, 8);
 
 int targetRPM = 60;  // Đặt tốc độ mong muốn
 int stepDelay;       // Thời gian delay giữa mỗi nửa bước
+int stepDelayDown;
 int x = 0;
 String state;
 int zeroPoint = 0;
+String currentCompartment;
 
 const int stopSwitchPin = A1;       // Công tắc dừng end point
 const int stopSwitchPinTest = A2;   // Công tắc
@@ -59,7 +61,6 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
   Serial.println();
 
   handleDataToUp();
-  state = "UP";
   handleDataToDown();
 
   dataRev.ID = "";
@@ -82,7 +83,8 @@ void setup() {
   pinMode(IN2, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
-  stepDelay = (60000 / (targetRPM * 400));  // 400 bước ở chế độ 1/2 bước
+  stepDelay = (60000 / (targetRPM * 400));          // 400 bước ở chế độ 1/2 bước
+  stepDelayDown = (60000 / (targetRPM * 400)) / 2;  // 400 bước ở chế độ 1/2 bước
 
   pinMode(stopSwitchPin, INPUT_PULLUP);       // Công tắc Stop với điện trở kéo lên
   pinMode(stopSwitchPinTest, INPUT_PULLUP);   // Công tắc Stop với điện trở kéo lên
@@ -130,8 +132,8 @@ void setup() {
   }
 
   Serial.println("ok");
-  runForward(10, state);
-  runToZeroPoint(state);
+  runForward(10);
+  runToZeroPoint();
 }
 
 void loop() {
@@ -143,13 +145,13 @@ void loop() {
   // }
   if (digitalRead(stopSwitchPinTest) == 0) {
     Serial.println("chay khoang tang 3");
-    runForward(1035, state);
+    runForward(1035);  // 1035 +50
   }
   if (digitalRead(stopSwitchPinTest2) == 0) {
     Serial.println("chay khoang tang 2");
-    runForward(650, state);
+    runForward(650);  // 650 +50
   }
-
+  //Serial.println(state);
   // runForward(100);
 }
 
@@ -161,11 +163,22 @@ void handleDataToUp() {
     Serial.println("khong len");
     return;
   }
-
+  currentCompartment = dataRev.ID;
   // xử lý chạy động cơ bước
-  if (dataRev.ID.equals("5") || dataRev.ID.equals("6") || dataRev.ID.equals("7") || dataRev.ID.equals("8")) {
+  if (dataRev.ID.equals("1") || dataRev.ID.equals("2") || dataRev.ID.equals("3") || dataRev.ID.equals("4")) {
+    Serial.println("chay dong co len tang 3");
+    runForward(1010);
+    dataSend.ID = dataRev.ID;
+    dataSend.command = "RUN";
+    esp_err_t result = esp_now_send(0, (uint8_t *)&dataSend, sizeof(dataSend));
+    if (result == ESP_OK) {
+      Serial.println("Sent to Storage compartment success");
+    } else {
+      Serial.println("Error sending the data");
+    }
+  } else if (dataRev.ID.equals("5") || dataRev.ID.equals("6") || dataRev.ID.equals("7") || dataRev.ID.equals("8")) {
     Serial.println("chay dong co len tang 2");
-    runForward(645, state);
+    runForward(640);
     dataSend.ID = dataRev.ID;
     dataSend.command = "RUN";
     esp_err_t result = esp_now_send(0, (uint8_t *)&dataSend, sizeof(dataSend));
@@ -179,13 +192,14 @@ void handleDataToUp() {
 
 void handleDataToDown() {
   /* neu nhan lenh tu storage compartment la ok thi deliver compartment ve vi tri ban dau */
-  if (!dataRev.ID.equals("0")) {
+  if (!dataRev.ID.equals(currentCompartment)) {
+    Serial.println("Sai ID");
     return;
   }
-  if (dataRev.command.equals("DOWN")) {
+  if (dataRev.command.equals("DOWN") && state.equals("UP")) {
     Serial.println("chay dong co ve vi tri 0");
-    runToZeroPoint(state);
-    dataSend.ID = "0";
+    runToZeroPoint();
+    dataSend.ID = currentCompartment;
     dataSend.command = "OK";
     esp_err_t result = esp_now_send(centralCompartment, (uint8_t *)&dataSend, sizeof(dataSend));
     if (result == ESP_OK) {
@@ -193,10 +207,11 @@ void handleDataToDown() {
     } else {
       Serial.println("Error sending the data");
     }
+    currentCompartment = "";
   }
 }
 
-void runToZeroPoint(String state) {
+void runToZeroPoint() {
   zeroPoint = 0;
   if (state != "DOWN") {
     while (zeroPoint < MAX) {
@@ -211,7 +226,7 @@ void runToZeroPoint(String state) {
     if (digitalRead(stopSwitchPin) == 0) {
       while (digitalRead(stopSwitchPin) == 0) {
         halfStep();
-        Serial.println("Dong co tien len");
+        Serial.println("Dong co tien len ham zero point");
       }
     }
   }
@@ -226,10 +241,11 @@ void stop() {
   digitalWrite(IN4, !LOW);
 }
 
-void runForward(int distance, String state) {
+void runForward(int distance) {
   int x = distance * 1.25;
   while (x > 0) {
-    Serial.println("Dong co tien len");
+    Serial.println("Dong co tien len ham forwawrd");
+    Serial.println(state);
     halfStep();
     x--;
   }
@@ -289,45 +305,45 @@ void halfStep2() {
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, HIGH);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, HIGH);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, HIGH);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, LOW);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, LOW);
-  delay(stepDelay);
+  delay(stepDelayDown);
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
-  delay(stepDelay);
+  delay(stepDelayDown);
 }

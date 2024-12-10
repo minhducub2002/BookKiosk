@@ -5,9 +5,19 @@
 #include <string>
 #include <WiFi.h>
 #include <esp_now.h>
+#include <LiquidCrystal_I2C.h>
+
+// set the LCD number of columns and rows
+int lcdColumns = 16;
+int lcdRows = 2;
+int lcdNeedClear = 0;
+
+// set LCD address, number of columns and rows
+// if you don't know your display address, run an I2C scanner sketch
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 
 // Define TX and RX pins for UART (change if needed)
-#define TXD1 22
+#define TXD1 17
 #define RXD1 16
 // Use Serial1 for UART communication
 HardwareSerial mySerial(2);
@@ -93,6 +103,17 @@ void setup() {
   Serial.begin(115200);
   mySerial.begin(9600, SERIAL_8N1, RXD1, TXD1);  // UART setup
 
+  // initialize LCD
+  lcd.init();
+  // turn on LCD backlight
+  lcd.backlight();
+
+  // set cursor to first column, first row
+  lcd.setCursor(0, 0);
+  lcd.print("BookKiosk hello!");
+  lcd.setCursor(0, 1);
+  lcd.print("Setup...");
+
   SPI.begin();      // Init SPI bus
   rfid.PCD_Init();  // Init MFRC522
   for (byte i = 0; i < 6; i++) {
@@ -119,7 +140,7 @@ void setup() {
     Serial.println("Failed to add peer");
     return;
   }
-  
+
   // register storage compartment 2
   memcpy(peerInfo.peer_addr, storageCompartment2, 6);
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
@@ -139,13 +160,20 @@ void setup() {
   delay(100);
 
   Serial.println("Setup OK!");
+  lcd.clear();
 }
 
 void loop() {
+  lcd.setCursor(0, 0);
+  // print message
+  lcd.print("Enter number: ");
   char key = keypad.getKey();
   if (key) {
     String keyString = String(key);
     if (keyString.equals("#")) {
+      lcd.setCursor(0, 1);
+      // print message
+      lcd.print("Enter!");
       Serial.println("Enter!");
       mySerial.print("Keypad ");
       mySerial.print(keyboardData);
@@ -160,12 +188,15 @@ void loop() {
       } else {
         Serial.println("Error sending the data");
       }
-
       keyboardData = "";
+      lcdNeedClear = 1;
     } else {
       keyboardData += key;
     }
     Serial.println(keyboardData);
+    lcd.setCursor(0, 1);
+    // print message
+    lcd.print(keyboardData);
     // dataSend.ID = keyboardData;
     // dataSend.command = "OK";
     // esp_err_t result = esp_now_send(0, (uint8_t*)&dataSend, sizeof(dataSend));
@@ -213,6 +244,10 @@ void loop() {
     // Read data and display it
     String message = mySerial.readStringUntil('\n');
     Serial.println("Received: " + message);
+  }
+  if (lcdNeedClear == 1) {
+    lcdNeedClear = 0;
+    lcd.clear();
   }
   delay(100);
 }

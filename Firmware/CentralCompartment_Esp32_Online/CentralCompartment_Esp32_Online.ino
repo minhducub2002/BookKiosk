@@ -9,7 +9,7 @@
 
 // Define TX and RX pins for UART (change if needed)
 #define TXD1 17
-#define RXD1 21
+#define RXD1 16
 // Use Serial1 for UART communication
 HardwareSerial mySerial(2);
 
