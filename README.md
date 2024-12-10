@@ -43,11 +43,12 @@ The **Book Kiosk Project** aims to create an automated kiosk system for selling 
    ```
 2. Set up the hardware connections as per the provided circuit diagram.
 3. Compile and upload the firmware to the microcontroller.
-4. Power on the kiosk and follow the on-screen instructions for operation.
+4. Power on the kiosk and follow the setup website instructions for operation.
 
 ---
 
 ## 🎮 How to Run the Website
+### Prerequisites
 - Ensure you have **Node.js** and **npm** installed on your system.
 ### Steps to Run
 1. Open **Visual Studio Code (VSC)** or a terminal of your choice.
