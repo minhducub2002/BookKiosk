@@ -26,7 +26,7 @@ The **Book Kiosk Project** aims to create an automated kiosk system for selling 
 ---
 
 ## 🖥️ Technologies Used
-- **Microcontrollers**: STM32 or Arduino-based systems.
+- **Microcontrollers**: ESP32 and ESP32C3.
 - **Sensors**: For detecting book placement, user interactions, etc.
 - **Actuators**: Motors for dispensing books.
 - **Software**:
@@ -51,6 +51,7 @@ The **Book Kiosk Project** aims to create an automated kiosk system for selling 
 ```
 BookKiosk/
 ├── Firmware/             # Microcontroller code
+├── Software/             # Fullstack website code
 ├── Schematics/           # Circuit diagrams and hardware designs
 ├── KioskDesign/          # 3D models and physical design plans
 ├── Docs/                 # User manuals and project documentation
