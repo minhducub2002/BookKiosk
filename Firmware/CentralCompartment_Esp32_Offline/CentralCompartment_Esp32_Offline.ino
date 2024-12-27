@@ -11,6 +11,7 @@
 int lcdColumns = 16;
 int lcdRows = 2;
 int lcdNeedClear = 0;
+int isLogin = 0;
 
 // set LCD address, number of columns and rows
 // if you don't know your display address, run an I2C scanner sketch
@@ -164,45 +165,57 @@ void setup() {
 }
 
 void loop() {
-  lcd.setCursor(0, 0);
-  // print message
-  lcd.print("Enter number: ");
-  char key = keypad.getKey();
-  if (key) {
-    String keyString = String(key);
-    if (keyString.equals("#")) {
+
+  if (isLogin == 1) {
+    lcd.setCursor(0, 0);
+    // print message
+    lcd.print("Enter number: ");
+    char key = keypad.getKey();
+    if (key) {
+      String keyString = String(key);
+      if (keyString.equals("#")) {
+        lcd.setCursor(0, 1);
+        // print message
+        lcd.print("Enter!");
+        Serial.println("Enter!");
+        mySerial.print("Keypad ");
+        mySerial.print(keyboardData);
+        mySerial.println("");
+
+        if (keyboardData == "0") {
+          isLogin = 0;
+        }
+        // Send to khoang day sach
+        dataSend.ID = keyboardData;
+        dataSend.command = "WAIT";
+        esp_err_t result = esp_now_send(deliveryCompartment, (uint8_t*)&dataSend, sizeof(dataSend));
+        if (result == ESP_OK) {
+          Serial.println("Sent with success");
+        } else {
+          Serial.println("Error sending the data");
+        }
+        keyboardData = "";
+        lcdNeedClear = 1;
+      } else {
+        keyboardData += key;
+      }
+      Serial.println(keyboardData);
       lcd.setCursor(0, 1);
       // print message
-      lcd.print("Enter!");
-      Serial.println("Enter!");
-      mySerial.print("Keypad ");
-      mySerial.print(keyboardData);
-      mySerial.println("");
-
-      // Send to khoang day sach
-      dataSend.ID = keyboardData;
-      dataSend.command = "WAIT";
-      esp_err_t result = esp_now_send(deliveryCompartment, (uint8_t*)&dataSend, sizeof(dataSend));
-      if (result == ESP_OK) {
-        Serial.println("Sent with success");
-      } else {
-        Serial.println("Error sending the data");
-      }
-      keyboardData = "";
-      lcdNeedClear = 1;
-    } else {
-      keyboardData += key;
+      lcd.print(keyboardData);
+      // dataSend.ID = keyboardData;
+      // dataSend.command = "OK";
+      // esp_err_t result = esp_now_send(0, (uint8_t*)&dataSend, sizeof(dataSend));
     }
-    Serial.println(keyboardData);
-    lcd.setCursor(0, 1);
+  } else if (isLogin == 0) {
+    lcd.setCursor(0, 0);
     // print message
-    lcd.print(keyboardData);
-    // dataSend.ID = keyboardData;
-    // dataSend.command = "OK";
-    // esp_err_t result = esp_now_send(0, (uint8_t*)&dataSend, sizeof(dataSend));
+    lcd.print("Please swipe");
+    lcd.setCursor(0, 1);
+    lcd.print("your card");
   }
 
-  if (rfid.PICC_IsNewCardPresent()) {
+  if (rfid.PICC_IsNewCardPresent() && isLogin == 0) {
     if (rfid.PICC_ReadCardSerial()) {
       Serial.print(F("PICC type: "));
       MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
@@ -243,7 +256,14 @@ void loop() {
   if (mySerial.available()) {
     // Read data and display it
     String message = mySerial.readStringUntil('\n');
+    message.trim();
     Serial.println("Received: " + message);
+    if (message == "Login succesfull") {
+      Serial.println("Quet the thanh cong");
+      isLogin = 1;
+      lcdNeedClear = 1;
+    }
+    message = "";
   }
   if (lcdNeedClear == 1) {
     lcdNeedClear = 0;

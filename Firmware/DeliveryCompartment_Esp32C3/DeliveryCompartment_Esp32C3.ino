@@ -84,7 +84,7 @@ void setup() {
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
   stepDelay = (60000 / (targetRPM * 400));          // 400 bước ở chế độ 1/2 bước
-  stepDelayDown = (60000 / (targetRPM * 400)) / 2;  // 400 bước ở chế độ 1/2 bước
+  stepDelayDown = (60000 / (targetRPM * 400)) / 2;  
 
   pinMode(stopSwitchPin, INPUT_PULLUP);       // Công tắc Stop với điện trở kéo lên
   pinMode(stopSwitchPinTest, INPUT_PULLUP);   // Công tắc Stop với điện trở kéo lên
@@ -145,11 +145,11 @@ void loop() {
   // }
   if (digitalRead(stopSwitchPinTest) == 0) {
     Serial.println("chay khoang tang 3");
-    runForward(1035);  // 1035 +50
+    runForward(1025);  // 1035 +50
   }
   if (digitalRead(stopSwitchPinTest2) == 0) {
     Serial.println("chay khoang tang 2");
-    runForward(650);  // 650 +50
+    runForward(630);  // 650 +50
   }
   //Serial.println(state);
   // runForward(100);
@@ -167,7 +167,7 @@ void handleDataToUp() {
   // xử lý chạy động cơ bước
   if (dataRev.ID.equals("1") || dataRev.ID.equals("2") || dataRev.ID.equals("3") || dataRev.ID.equals("4")) {
     Serial.println("chay dong co len tang 3");
-    runForward(1010);
+    runForward(990);
     dataSend.ID = dataRev.ID;
     dataSend.command = "RUN";
     esp_err_t result = esp_now_send(0, (uint8_t *)&dataSend, sizeof(dataSend));
@@ -178,7 +178,7 @@ void handleDataToUp() {
     }
   } else if (dataRev.ID.equals("5") || dataRev.ID.equals("6") || dataRev.ID.equals("7") || dataRev.ID.equals("8")) {
     Serial.println("chay dong co len tang 2");
-    runForward(640);
+    runForward(620);
     dataSend.ID = dataRev.ID;
     dataSend.command = "RUN";
     esp_err_t result = esp_now_send(0, (uint8_t *)&dataSend, sizeof(dataSend));
@@ -230,6 +230,12 @@ void runToZeroPoint() {
       }
     }
   }
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+  analogWrite(enA, 0);
+  analogWrite(enB, 0);
   state = "DOWN";
   Serial.println(state);
 }
@@ -254,8 +260,8 @@ void runForward(int distance) {
 }
 
 void halfStep() {
-  analogWrite(enA, 255);
-  analogWrite(enB, 255);
+  analogWrite(enA, 200);
+  analogWrite(enB, 200);
   digitalWrite(IN1, !HIGH);
   digitalWrite(IN2, !LOW);
   digitalWrite(IN3, !LOW);
@@ -299,8 +305,8 @@ void halfStep() {
 }
 
 void halfStep2() {
-  analogWrite(enA, 255);
-  analogWrite(enB, 255);
+  analogWrite(enA, 170);
+  analogWrite(enB, 170);
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);

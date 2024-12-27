@@ -8,8 +8,8 @@
 #define LED_BLUE 25
 
 // Define TX and RX pins for UART (change if needed)
-#define TXD1 17
-#define RXD1 16
+#define TXD1 21
+#define RXD1 17
 // Use Serial1 for UART communication
 HardwareSerial mySerial(2);
 
@@ -31,7 +31,7 @@ FirebaseAuth auth;
 FirebaseConfig config;
 
 // Declare variables ------------------------------------------------------------------------------------------------------
-unsigned long sendDataPrevMillis = 0;
+unsigned long readDataMillis = 200;
 String stringValue;
 int intValue = 0;
 float floatValue;
@@ -39,6 +39,9 @@ bool signupOK = false;
 String ID = "";       // Biến lưu ID nhận được từ esp32_offline
 String command = "";  // Biến lưu command nhận được từ esp32_offline
 int toneVal = 4000;   // Còi
+int sentLoginData = 0;
+unsigned long previousMillis = 0;
+unsigned long interval = 1000;
 
 void setup() {
   Serial.begin(115200);
@@ -88,6 +91,8 @@ void setup() {
 }
 
 void loop() {
+  unsigned long currentMillis = millis();
+
   digitalWrite(LED_GREEN, HIGH);
   digitalWrite(LED_RED, LOW);
   digitalWrite(LED_BLUE, LOW);
@@ -137,25 +142,52 @@ void loop() {
     command = "";
   }
 
-  if (Firebase.ready() && signupOK) {
-    if (Firebase.RTDB.getInt(&fbdo, "/selected_book/book_index")) {
-      if (fbdo.dataType() == "int") {
-        intValue = fbdo.intData();
-        Serial.println(intValue);
+  if (Firebase.ready() && signupOK && (currentMillis - previousMillis >= readDataMillis)) {
+    //   if (Firebase.RTDB.getInt(&fbdo, "/selected_book/book_index")) {
+    //     if (fbdo.dataType() == "int") {
+    //       intValue = fbdo.intData();
+    //       Serial.println(intValue);
+    //     }
+    //   } else {
+    //     Serial.println(fbdo.errorReason());
+    //   }
+    // if (intValue != 0) {
+    //   Serial.print(intValue);
+    //   Serial.print(" RUN");
+    //   Serial.println("");
+    //   mySerial.print(intValue);
+    //   mySerial.print(" RUN");
+    //   mySerial.println("");
+    //   intValue = 0;
+    // }
+    if (Firebase.RTDB.getString(&fbdo, "/borrowers/UID")) {
+      if (fbdo.dataType() == "string") {
+        stringValue = fbdo.stringData();
+        //Serial.println(sentLoginData);
+        if ((stringValue != NULL || stringValue.isEmpty()) && sentLoginData == 0) {
+          mySerial.print("Login succesfull");
+          mySerial.println("");
+          sentLoginData = 1;
+        } else if (stringValue == NULL) {
+          sentLoginData = 0;
+        }
       }
     } else {
       Serial.println(fbdo.errorReason());
     }
-
-    if (intValue != 0) {
-      Serial.print(intValue);
-      Serial.print(" RUN");
-      Serial.println("");
-      mySerial.print(intValue);
-      mySerial.print(" RUN");
-      mySerial.println("");
-      intValue = 0;
-    }
-    delay(100);
+    previousMillis = currentMillis;
   }
+
+  // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >= interval)) {
+    digitalWrite(LED_RED, HIGH);
+    digitalWrite(LED_GREEN, LOW);
+    digitalWrite(LED_BLUE, LOW);
+    Serial.print(millis());
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.reconnect();
+    previousMillis = currentMillis;
+  }
+  //delay(100);
 }
